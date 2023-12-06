@@ -1,46 +1,52 @@
 package com.sportplace
 
+import android.Manifest.permission.ACCESS_FINE_LOCATION
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import androidx.core.content.ContextCompat
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import com.sportplace.navigation.MyAppNavHost
 import com.sportplace.ui.theme.SportPlaceTheme
+import com.sportplace.views.mapAddLocationPlace.MapAddLocalPlaceViewModel
 
 class MainActivity : ComponentActivity() {
+    private val requestPermissionLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted: Boolean ->
+            if (isGranted) {
+                viewModel.getDeviceLocation(fusedLocationProviderClient)
+            }
+        }
+
+    private fun askPermissions() = when {
+        ContextCompat.checkSelfPermission(
+            this,
+            ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED -> {
+            viewModel.getDeviceLocation(fusedLocationProviderClient)
+        }
+        else -> {
+            requestPermissionLauncher.launch(ACCESS_FINE_LOCATION)
+        }
+    }
+
+    private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+    private val viewModel: MapAddLocalPlaceViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
+        askPermissions()
         setContent {
             SportPlaceTheme {
-                // A surface container using the 'background' color from the theme
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    Greeting("Android")
-                }
+                MyAppNavHost()
             }
         }
     }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    SportPlaceTheme {
-        Greeting("Android")
-    }
-}
